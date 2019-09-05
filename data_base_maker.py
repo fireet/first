@@ -16,31 +16,6 @@ i = wb.sheetnames[0]
 sheet = wb[i]
 
 
-def work_dict(base):
-    data = {}
-    if base[0] not in data.keys():
-        data[base[0]] = {'old_res': [], 'new_res': []}
-    data[base[0]]['old_res'].append(base[1])
-    data[base[0]]['new_res'].append(base[2])
-    return data
-
-
-def first_step(raw_data, po):
-    pool = []
-    data = []
-    for key in raw_data.keys():
-        for x in raw_data[key]:
-            for y in [3,4,5]:
-                work = po.cell(row=x, column=y).value
-                data.append(work)
-            pool.append(work_dict(data))
-            data.clear()
-        raw_data[key] = [*pool]
-        print(pool)
-        pool.clear()
-    return raw_data
-
-
 def get_dict(database):
     data = {}
     pool = []
@@ -61,16 +36,25 @@ def get_dict(database):
 raw_data = get_dict(sheet)
 
 
-            
-raw_data = first_step(raw_data,sheet)  
+def working_dict(data, database):
+    pool = {}
+    for key in data:
+        if key not in pool:
+            pool[key] = {}
+        tmp = []
+        s = {}
+        for i in data[key]:
+            for y in (3, 4, 5):
+                work = database.cell(row=i, column=y).value
+                tmp.append(work)
+            if tmp[0] not in s:
+                s[tmp[0]] = tmp[1:]
 
+            tmp.clear()
+        pool[key] = s.copy()
+        s.clear()
+    return pool
 
-
-
-for key in raw_data.keys():
-    print(raw_data[key])
-
+data_dict = working_dict(raw_data, sheet)
+print(data_dict)
         
-
-
-    
