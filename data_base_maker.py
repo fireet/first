@@ -6,55 +6,50 @@ Created on Wed Sep  4 13:40:04 2019
 @author: fireet
 """
 
-from openpyxl import load_workbook
-file = './data/59322001.xlsx'
+import openpyxl
 
+settings = {
+            'doc': 0,
+            'name': 1,
+            'indicator': 2,
+            'old': 3,
+            'new': 4,
+            'tars': {
+                    'ГВС': 12.13,
+                    'ХВС': 9.52,
+                    'ЭЭ': 134.164,
+                    },
+            }
+            
+wb = openpyxl.load_workbook('./data/59322001.xlsx')
 
-wb = load_workbook(file)
-i = wb.sheetnames[0]
+work = wb.active
+data = []
+for row in range(4,work.max_row+1):
+    tmp = []
+    for column in range(1,6):
+        tmp.append(work.cell(row,column).value)
+    data.append(tmp)
 
-sheet = wb[i]
+tar = 2
+old = 3
+new = 4
+result = 5
 
+for item in data:
+    x,y = item[old], item[new]
+    answer = y-x
+    item.append(round(answer,2))
+    key = item[tar].split()[0]
+    if key in settings['tars']:
+        answer = item[result]*settings['tars'][key]
+        item.append(round(answer,2))
 
-def get_dict(database):
-    data = {}
-    pool = []
-    tmp = None
-    for i in range(4, database.max_row+1):
-        work = database.cell(row=i, column=2).value
-        if work:
-            if tmp:
-                data[tmp] = [*pool]
-            tmp = work
-            pool.clear()
-            pool.append(i)
-            continue
-        pool.append(i)
+def get_data():
     return data
 
 
-raw_data = get_dict(sheet)
 
 
-def working_dict(data, database):
-    pool = {}
-    for key in data:
-        if key not in pool:
-            pool[key] = {}
-        tmp = []
-        s = {}
-        for i in data[key]:
-            for y in (3, 4, 5):
-                work = database.cell(row=i, column=y).value
-                tmp.append(work)
-            if tmp[0] not in s:
-                s[tmp[0]] = tmp[1:]
-
-            tmp.clear()
-        pool[key] = s.copy()
-        s.clear()
-    return pool
-
-data_dict = working_dict(raw_data, sheet)
-print(data_dict)
-        
+def get_cell(key, data):
+    pass
