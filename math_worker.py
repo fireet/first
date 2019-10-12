@@ -6,7 +6,15 @@ Created on Tue Oct  1 12:55:14 2019
 @author: fireet
 """
 from data_base_maker import get_data, get_complex_tars
-from pandas import DataFrame
+import openpyxl
+from openpyxl.styles.borders import Border, Side
+import os
+import time
+
+start_time = time.time()
+
+thin_border = Border(bottom=Side(style='thin'))
+
 
 class Complex:
     ind = {}
@@ -54,8 +62,8 @@ class Res:
         self.cash = 0.0
 
     def work_res(self):
-        self.total = round(self.new - self.old, 4)
-        self.cash = round(self.total*self.coef*self.tars, 2)
+        self.total = round(self.new - self.old, 2)
+        self.cash = round(self.total*self.coef*self.tars*self.coef, 2)
 
 
 class Arend:
@@ -71,6 +79,7 @@ class Arend:
         self.total_cash = 0.0
         self.data_res = []
         self.tars = tars
+        self.lost = 0.0
         Arend.arend_pool.append(self)
 
     def new_res(self,
@@ -91,43 +100,24 @@ class Arend:
         for i in self.data_res:
             if i.name not in pool:
                 pool[i.name] = 0
-            pool[i.name] += i.cash
+
+            pool[i.name] += round(i.cash, 2)
             total_cash_res += i.cash
-            self.total_cash += i.cash
+            self.total_cash += round(i.cash, 2)
         self.data_res.append(pool)
 
 
-names = [dict(complex_name='first',
-              hot_water_tar=13.25,
-              cold_water_tar=13.82,
-              water_off_tar=14.29,
-              electro_tar=73.6,
-              ),
-         dict(complex_name='3rd',
-              hot_water_tar=24.46,
-              cold_water_tar=17.82,
-              water_off_tar=14.29,
-              electro_tar=200,
-              ),
-         dict(complex_name='2nd',
-              hot_water_tar=13.25,
-              cold_water_tar=0.0,
-              water_off_tar=14.29,
-              electro_tar=0.0,
-              ),
-         ]
-
 names = get_complex_tars()
-print(names)
 
 Complex(**names['первый'])
 active = Complex.ind['первый']
 
 data = get_data()
+
 for item in data:
     if item[0] not in active.arend and item[0]:
+        doc = str(item[0])
         name = item[1]
-        doc = item[0]
         active.add_arend(doc, name)
     tmp = dict(name_res=item[2],
                old=item[3],
@@ -139,7 +129,52 @@ for item in data:
         i.work_res()
 for x in active.arend.values():
     x.get_all_value()
-    
+
+
+if not os.path.isfile('test.xlsx'):
+    wb = openpyxl.Workbook()
+    wb.save('test.xlsx')
+
 for x in Complex.ind.values():
+    wbk = openpyxl.load_workbook('test.xlsx')
+    wbs = wbk[wbk.sheetnames[0]]
+    row = 1
+    colomn = 1
+    wbs.cell(row, colomn).value = x.complex_name
+    wbk.save('test.xlsx')
+    row += 1
     for s in x.arend.values():
-        print(s.__dict__)
+
+        for i in ['doc', 'name', 'data_res', 'total_cash']:
+            if i == 'data_res':
+                s.__dict__[i].pop()
+                pool = s.__dict__[i]
+                for item in pool:
+                    column = colomn
+                    for path in item.__dict__.keys():
+                        tmp = item.__dict__[path]
+                        if type(tmp) != str:
+                            tmp = '{:0.2f}'.format(tmp)
+                        wbs.cell(row, column).value = item.__dict__[path]
+                        wbk.save('test.xlsx')
+                        column += 1
+                    row += 1
+                colomn = column
+            else:
+                tmp = s.__dict__[i]
+                if type(tmp) is not str:
+                    tmp = '{:0.2f}'.format(tmp)
+                wbs.cell(row, colomn).value = str(tmp)
+                colomn += 1
+                wbk.save('test.xlsx')
+        for i in range(1, wbs.max_column+1):
+            wbs.cell(row, i).border = thin_border
+        colomn = 1
+        row += 1
+        wbk.save('test.xlsx')
+    wbk.close
+    break
+
+
+print('--- %s seconds ---' % (time.time() - start_time))
+ 
